@@ -1,5 +1,30 @@
 import SwiftUI
 
+// ── 音節カウント ──
+private func syllableCount(_ word: String) -> Double {
+    let w = word.lowercased().replacingOccurrences(of: #"[^a-z]"#, with: "", options: .regularExpression)
+    let vowels: Set<Character> = ["a","e","i","o","u","y"]
+    var count = 0; var prev = false
+    for ch in w { let v = vowels.contains(ch); if v && !prev { count += 1 }; prev = v }
+    if w.hasSuffix("e") && count > 1 { count -= 1 }
+    return max(1.0, Double(count))
+}
+
+// ── 単語タイミング推定（行全体の0.0〜1.0内での各単語の開始・終了）──
+private func estimateWordTimings(_ words: [String]) -> [(start: Double, end: Double)] {
+    guard !words.isEmpty else { return [] }
+    let weights = words.map { syllableCount($0) }
+    let total = weights.reduce(0, +)
+    var result: [(Double, Double)] = []
+    var cursor = 0.0
+    for w in weights {
+        let duration = w / total
+        result.append((cursor, cursor + duration))
+        cursor += duration
+    }
+    return result
+}
+
 struct NewLyricsView: View {
     let lines: [LyricLine]
     let currentTime: Double
@@ -41,33 +66,30 @@ struct NewLyricsView: View {
                             : (isPast ? 1.0 : 0.0)
                         let words = line.text.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
                         let wordRhymes: [Int: Int] = showRhymes
-                            ? Dictionary(uniqueKeysWithValues:
-                                (0..<words.count).compactMap { wi -> (Int, Int)? in
-                                    guard let c = rhymeMap["\(i)_\(wi)"] else { return nil }
-                                    return (wi, c)
-                                })
+                            ? Dictionary(uniqueKeysWithValues: (0..<words.count).compactMap { wi -> (Int,Int)? in
+                                guard let c = rhymeMap["\(i)_\(wi)"] else { return nil }
+                                return (wi, c) })
                             : [:]
 
                         VStack(alignment: .center, spacing: 5) {
-                            NewKaraokeText(
+                            WordRevealText(
                                 words: words,
                                 wordRhymes: wordRhymes,
                                 progress: progress,
-                                fontSize: fontSize
+                                fontSize: isActive ? fontSize : max(fontSize * 0.82, 16),
+                                isActive: isActive
                             )
                             if showTranslation, let tr = line.translation, !tr.isEmpty {
                                 Text(tr)
-                                    .font(.system(size: max(fontSize * 0.45, 13), weight: .regular))
-                                    .foregroundStyle(isActive ? Color.accentColor.opacity(0.95) : Color.white.opacity(0.35))
+                                    .font(.system(size: max(fontSize * 0.42, 13), weight: .regular))
+                                    .foregroundStyle(isActive ? Color.accentColor.opacity(0.95) : Color.white.opacity(0.3))
                                     .multilineTextAlignment(.center)
                                     .lineLimit(3)
-                                    .animation(.easeOut(duration: 0.3), value: isActive)
                             }
                         }
                         .padding(.horizontal, 16)
-                        .scaleEffect(isActive ? 1.0 : 0.95, anchor: .center)
-                        .opacity(isActive ? 1.0 : (isPast ? 0.45 : 0.2))
-                        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isActive)
+                        .opacity(isActive ? 1.0 : (isPast ? 0.45 : 0.18))
+                        .animation(.spring(response: 0.32, dampingFraction: 0.78), value: isActive)
                         .onTapGesture { nowPlayingService.setPlayerPosition(line.timestamp) }
                         .id(i)
                     }
@@ -77,7 +99,7 @@ struct NewLyricsView: View {
             .onChange(of: activeIndex) { _, idx in
                 if autoScrollEnabled {
                     proxy.scrollTo(idx, anchor: .center)
-                    withAnimation(.easeOut(duration: 0.2)) {
+                    withAnimation(.easeOut(duration: 0.18)) {
                         proxy.scrollTo(idx, anchor: .center)
                     }
                 }
@@ -94,57 +116,93 @@ struct NewLyricsView: View {
     }
 }
 
-struct NewKaraokeText: View {
+// ── 単語ごとに光るビュー ──
+struct WordRevealText: View {
     let words: [String]
     let wordRhymes: [Int: Int]
     let progress: Double
     let fontSize: CGFloat
+    let isActive: Bool
+
+    private var timings: [(start: Double, end: Double)] { estimateWordTimings(words) }
 
     var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                StyledWordText(words: words, wordRhymes: wordRhymes, opacity: 0.18, fontSize: fontSize)
-                    .multilineTextAlignment(.center)
-                    .frame(width: geo.size.width, alignment: .center)
+        LyricFlowLayout(spacing: 5, lineSpacing: 4) {
+            ForEach(Array(words.enumerated()), id: \.offset) { i, word in
+                let timing = i < timings.count ? timings[i] : (0.0, 1.0)
+                // 各単語のローカル進捗（少し先読みして自然に）
+                let raw = (progress - timing.start) / max(timing.end - timing.start, 0.01)
+                let clipped = max(0.0, min(1.0, raw))
+                // Cubic ease-in-out
+                let eased = clipped < 0.5
+                    ? 4 * clipped * clipped * clipped
+                    : 1 - pow(-2 * clipped + 2, 3) / 2
+                let rhymeColor: Color = wordRhymes[i].map { RhymeDetector.rhymeColor($0) } ?? .white
 
-                StyledWordText(words: words, wordRhymes: wordRhymes, opacity: 1.0, fontSize: fontSize)
-                    .multilineTextAlignment(.center)
-                    .frame(width: geo.size.width, alignment: .center)
-                    .mask(
-                        LinearGradient(
-                            stops: [
-                                .init(color: .white, location: max(0, progress - 0.08)),
-                                .init(color: .white.opacity(0.98), location: max(0, progress - 0.02)),
-                                .init(color: .clear, location: min(1, progress + 0.02)),
-                            ],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .shadow(color: Color.white.opacity(progress > 0.02 ? 0.45 : 0), radius: 10)
+                ZStack {
+                    // ベース（薄く常時表示）
+                    Text(word)
+                        .font(.system(size: fontSize, weight: .bold))
+                        .foregroundStyle(rhymeColor.opacity(wordRhymes[i] != nil ? 0.35 : 0.18))
+
+                    // 前景（eased進捗でフェードイン）
+                    Text(word)
+                        .font(.system(size: fontSize, weight: .bold))
+                        .foregroundStyle(rhymeColor)
+                        .opacity(eased)
+                        .scaleEffect(1.0 + eased * 0.05, anchor: .bottom)
+                        .shadow(color: rhymeColor.opacity(eased * 0.7), radius: eased * 10)
+                        .shadow(color: rhymeColor.opacity(eased * 0.3), radius: eased * 20)
+                }
+                .animation(.interpolatingSpring(stiffness: 280, damping: 22), value: eased)
             }
         }
-        .frame(minHeight: fontSize * 2.2)
+        .frame(maxWidth: .infinity)
     }
 }
 
-struct StyledWordText: View {
-    let words: [String]
-    let wordRhymes: [Int: Int]
-    let opacity: Double
-    let fontSize: CGFloat
+// ── 折り返しレイアウト ──
+struct LyricFlowLayout: Layout {
+    var spacing: CGFloat = 5
+    var lineSpacing: CGFloat = 4
 
-    var body: some View {
-        words.enumerated().reduce(Text("")) { acc, pair in
-            let (i, word) = pair
-            let suffix = i == words.count - 1 ? "" : " "
-            let base = Text(word + suffix).font(.system(size: fontSize, weight: .bold))
-            if let c = wordRhymes[i] {
-                return acc + base.foregroundStyle(
-                    RhymeDetector.rhymeColor(c).opacity(opacity == 1.0 ? 1.0 : min(opacity * 3, 0.55))
-                )
-            }
-            return acc + base.foregroundStyle(Color.white.opacity(opacity))
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        layout(proposal: proposal, subviews: subviews).size
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let result = layout(proposal: ProposedViewSize(bounds.size), subviews: subviews)
+        for (i, frame) in result.frames.enumerated() {
+            subviews[i].place(
+                at: CGPoint(x: bounds.minX + frame.minX, y: bounds.minY + frame.minY),
+                proposal: ProposedViewSize(frame.size)
+            )
         }
+    }
+
+    private func layout(proposal: ProposedViewSize, subviews: Subviews) -> (size: CGSize, frames: [CGRect]) {
+        let maxW = proposal.width ?? 400
+        var frames = [CGRect](repeating: .zero, count: subviews.count)
+        var rowItems: [(Int, CGSize)] = []
+        var x: CGFloat = 0, y: CGFloat = 0, rowH: CGFloat = 0
+
+        func commitRow() {
+            let totalW = rowItems.map{$0.1.width}.reduce(0,+) + spacing * CGFloat(max(rowItems.count-1, 0))
+            let ox = max((maxW - totalW) / 2, 0)
+            var rx = ox
+            for (idx, sz) in rowItems {
+                frames[idx] = CGRect(x: rx, y: y, width: sz.width, height: sz.height)
+                rx += sz.width + spacing
+            }
+            y += rowH + lineSpacing; rowH = 0; rowItems = []; x = 0
+        }
+
+        for (i, sv) in subviews.enumerated() {
+            let sz = sv.sizeThatFits(ProposedViewSize(width: maxW, height: nil))
+            if x + sz.width > maxW && !rowItems.isEmpty { commitRow() }
+            rowItems.append((i, sz)); x += sz.width + spacing; rowH = max(rowH, sz.height)
+        }
+        if !rowItems.isEmpty { commitRow() }
+        return (CGSize(width: maxW, height: max(y - lineSpacing, 0)), frames)
     }
 }

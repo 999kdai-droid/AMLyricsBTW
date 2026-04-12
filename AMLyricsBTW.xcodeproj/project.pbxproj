@@ -13,8 +13,11 @@
 		F007 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LRCLIBService.swift; sourceTree = "<group>"; };
 		F008 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtworkService.swift; sourceTree = "<group>"; };
 		F009 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationService.swift; sourceTree = "<group>"; };
+		F017 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BeatDetectionService.swift; sourceTree = "<group>"; };
 		F016 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorExtractor.swift; sourceTree = "<group>"; };
+		BF017 = {isa = PBXBuildFile; fileRef = F017; };
 		BF016 = {isa = PBXBuildFile; fileRef = F016; };
+		F017 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BeatDetectionService.swift; sourceTree = "<group>"; };
 		F016 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorExtractor.swift; sourceTree = "<group>"; };
 		F010 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlbumTracksService.swift; sourceTree = "<group>"; };
 		F011 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewLyricsView.swift; sourceTree = "<group>"; };
@@ -24,7 +27,7 @@
 		F015 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LyricsScrollView.swift; sourceTree = "<group>"; };
 		FAPP = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AMLyricsBTW.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		GMODELS  = {isa = PBXGroup; children = (F003,F004,F005); name = Models; sourceTree = "<group>"; path = Models; };
-		GSERVICES = {isa = PBXGroup; children = (F006,F007,F008,F009,F010,F014,F016); name = Services; sourceTree = "<group>"; path = Services; };
+		GSERVICES = {isa = PBXGroup; children = (F006,F007,F008,F009,F010,F014,F016,F017); name = Services; sourceTree = "<group>"; path = Services; };
 		GVIEWS   = {isa = PBXGroup; children = (F011,F012,F013,F015); name = Views; sourceTree = "<group>"; path = Views; };
 		GPRODUCTS = {isa = PBXGroup; children = (FAPP); name = Products; sourceTree = "<group>"; };
 		GMAIN = {isa = PBXGroup; children = (F001,F002,GMODELS,GSERVICES,GVIEWS); name = AMLyricsBTW; sourceTree = "<group>"; path = AMLyricsBTW; };
@@ -38,6 +41,7 @@
 		BF007 = {isa = PBXBuildFile; fileRef = F007; };
 		BF008 = {isa = PBXBuildFile; fileRef = F008; };
 		BF009 = {isa = PBXBuildFile; fileRef = F009; };
+		BF017 = {isa = PBXBuildFile; fileRef = F017; };
 		BF016 = {isa = PBXBuildFile; fileRef = F016; };
 		BF010 = {isa = PBXBuildFile; fileRef = F010; };
 		BF011 = {isa = PBXBuildFile; fileRef = F011; };
@@ -45,7 +49,7 @@
 		BF013 = {isa = PBXBuildFile; fileRef = F013; };
 		BF014 = {isa = PBXBuildFile; fileRef = F014; };
 		BF015 = {isa = PBXBuildFile; fileRef = F015; };
-		SOURCES = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (BF001,BF002,BF003,BF004,BF005,BF006,BF007,BF008,BF009,BF010,BF011,BF012,BF013,BF014,BF015,BF016); runOnlyForDeploymentPostprocessing = 0; };
+		SOURCES = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (BF001,BF002,BF003,BF004,BF005,BF006,BF007,BF008,BF009,BF010,BF011,BF012,BF013,BF014,BF015,BF016,BF017); runOnlyForDeploymentPostprocessing = 0; };
 		FRAMEWORKS = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 		RESOURCES = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 		TARGET1 = {
@@ -93,6 +97,7 @@
 				PRODUCT_NAME = AMLyricsBTW;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "ビートリアクティブ機能のためにマイクを使用します。";
 				CODE_SIGN_ENTITLEMENTS = "AMLyricsBTW/AMLyricsBTW.entitlements";
 			};
 		};
@@ -112,6 +117,7 @@
 				PRODUCT_NAME = AMLyricsBTW;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "ビートリアクティブ機能のためにマイクを使用します。";
 				CODE_SIGN_ENTITLEMENTS = "AMLyricsBTW/AMLyricsBTW.entitlements";
 			};
 		};
