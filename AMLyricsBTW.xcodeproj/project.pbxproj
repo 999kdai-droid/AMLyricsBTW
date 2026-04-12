@@ -1,0 +1,124 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 56;
+	objects = {
+		F001 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AMLyricsBTWApp.swift; sourceTree = "<group>"; };
+		F002 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		F003 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Track.swift; sourceTree = "<group>"; };
+		F004 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LyricLine.swift; sourceTree = "<group>"; };
+		F005 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LRCParser.swift; sourceTree = "<group>"; };
+		F006 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NowPlayingService.swift; sourceTree = "<group>"; };
+		F007 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LRCLIBService.swift; sourceTree = "<group>"; };
+		F008 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtworkService.swift; sourceTree = "<group>"; };
+		F009 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationService.swift; sourceTree = "<group>"; };
+		F016 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorExtractor.swift; sourceTree = "<group>"; };
+		BF016 = {isa = PBXBuildFile; fileRef = F016; };
+		F016 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorExtractor.swift; sourceTree = "<group>"; };
+		F010 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlbumTracksService.swift; sourceTree = "<group>"; };
+		F011 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewLyricsView.swift; sourceTree = "<group>"; };
+		F012 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlbumArtView.swift; sourceTree = "<group>"; };
+		F013 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionArtworkView.swift; sourceTree = "<group>"; };
+		F014 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicKitLyricsService.swift; sourceTree = "<group>"; };
+		F015 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LyricsScrollView.swift; sourceTree = "<group>"; };
+		FAPP = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AMLyricsBTW.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		GMODELS  = {isa = PBXGroup; children = (F003,F004,F005); name = Models; sourceTree = "<group>"; path = Models; };
+		GSERVICES = {isa = PBXGroup; children = (F006,F007,F008,F009,F010,F014,F016); name = Services; sourceTree = "<group>"; path = Services; };
+		GVIEWS   = {isa = PBXGroup; children = (F011,F012,F013,F015); name = Views; sourceTree = "<group>"; path = Views; };
+		GPRODUCTS = {isa = PBXGroup; children = (FAPP); name = Products; sourceTree = "<group>"; };
+		GMAIN = {isa = PBXGroup; children = (F001,F002,GMODELS,GSERVICES,GVIEWS); name = AMLyricsBTW; sourceTree = "<group>"; path = AMLyricsBTW; };
+		GROOT = {isa = PBXGroup; children = (GMAIN,GPRODUCTS); sourceTree = "<group>"; };
+		BF001 = {isa = PBXBuildFile; fileRef = F001; };
+		BF002 = {isa = PBXBuildFile; fileRef = F002; };
+		BF003 = {isa = PBXBuildFile; fileRef = F003; };
+		BF004 = {isa = PBXBuildFile; fileRef = F004; };
+		BF005 = {isa = PBXBuildFile; fileRef = F005; };
+		BF006 = {isa = PBXBuildFile; fileRef = F006; };
+		BF007 = {isa = PBXBuildFile; fileRef = F007; };
+		BF008 = {isa = PBXBuildFile; fileRef = F008; };
+		BF009 = {isa = PBXBuildFile; fileRef = F009; };
+		BF016 = {isa = PBXBuildFile; fileRef = F016; };
+		BF010 = {isa = PBXBuildFile; fileRef = F010; };
+		BF011 = {isa = PBXBuildFile; fileRef = F011; };
+		BF012 = {isa = PBXBuildFile; fileRef = F012; };
+		BF013 = {isa = PBXBuildFile; fileRef = F013; };
+		BF014 = {isa = PBXBuildFile; fileRef = F014; };
+		BF015 = {isa = PBXBuildFile; fileRef = F015; };
+		SOURCES = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (BF001,BF002,BF003,BF004,BF005,BF006,BF007,BF008,BF009,BF010,BF011,BF012,BF013,BF014,BF015,BF016); runOnlyForDeploymentPostprocessing = 0; };
+		FRAMEWORKS = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		RESOURCES = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		TARGET1 = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CONFLIST1;
+			buildPhases = (SOURCES,FRAMEWORKS,RESOURCES);
+			buildRules = ();
+			dependencies = ();
+			name = AMLyricsBTW;
+			productName = AMLyricsBTW;
+			productReference = FAPP;
+			productType = "com.apple.product-type.application";
+		};
+		PROJECT1 = {
+			isa = PBXProject;
+			attributes = {
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = { TARGET1 = {CreatedOnToolsVersion = 16.0; }; };
+			};
+			buildConfigurationList = CONFLIST2;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (en, Base);
+			mainGroup = GROOT;
+			productRefGroup = GPRODUCTS;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (TARGET1);
+		};
+		DEBUG1 = {
+			isa = XCBuildConfiguration; name = Debug;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Apple Musicの再生情報を取得するために使用します。";
+				MARKETING_VERSION = 1.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.amlyrics.btw";
+				PRODUCT_NAME = AMLyricsBTW;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				CODE_SIGN_ENTITLEMENTS = "AMLyricsBTW/AMLyricsBTW.entitlements";
+			};
+		};
+		RELEASE1 = {
+			isa = XCBuildConfiguration; name = Release;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Apple Musicの再生情報を取得するために使用します。";
+				MARKETING_VERSION = 1.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.amlyrics.btw";
+				PRODUCT_NAME = AMLyricsBTW;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				CODE_SIGN_ENTITLEMENTS = "AMLyricsBTW/AMLyricsBTW.entitlements";
+			};
+		};
+		DEBUG2  = {isa = XCBuildConfiguration; name = Debug;   buildSettings = {MACOSX_DEPLOYMENT_TARGET = 15.0;};};
+		RELEASE2 = {isa = XCBuildConfiguration; name = Release; buildSettings = {MACOSX_DEPLOYMENT_TARGET = 15.0;};};
+		CONFLIST1 = {isa = XCConfigurationList; buildConfigurations = (DEBUG1,RELEASE1); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;};
+		CONFLIST2 = {isa = XCConfigurationList; buildConfigurations = (DEBUG2,RELEASE2); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;};
+	};
+	rootObject = PROJECT1;
+}
