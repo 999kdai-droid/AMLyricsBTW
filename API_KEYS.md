@@ -77,6 +77,8 @@ WHISPER_MODEL=medium  # "small" または "medium"
 UserDefaults.standard.set("http://192.168.1.100:8000", forKey: "serverBaseURL")
 ```
 
+**現在の設定**: サーバー固定IPは `192.168.1.100` に設定済み
+
 または、設定画面を作成してユーザーに入力させる。
 
 ### 2. サーバーAPIキー (必須)
@@ -86,8 +88,10 @@ UserDefaults.standard.set("http://192.168.1.100:8000", forKey: "serverBaseURL")
 **設定場所**: アプリ内のUserDefaults
 
 ```swift
-UserDefaults.standard.set("your_secure_random_key_here", forKey: "serverAPIKey")
+UserDefaults.standard.set("AMlyrics_API_SUPER", forKey: "serverAPIKey")
 ```
+
+**現在の設定**: AMLyrics APIキーは `AMlyrics_API_SUPER` に設定済み
 
 **注意**: サーバーの `.env` で設定した `AMLYRICS_API_KEY` と同じ値を使用すること。
 
@@ -177,7 +181,7 @@ struct AMLyricsBTWApp: App {
 
 ### server/.env 例
 ```
-AMLYRICS_API_KEY=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
+AMLYRICS_API_KEY=AMlyrics_API_SUPER
 GEMINI_API_KEY=AIzaSyABC123XYZ456DEF789GHI012JKL345MNO
 WHISPER_MODEL=medium
 ```
@@ -185,7 +189,7 @@ WHISPER_MODEL=medium
 ### クライアント側設定例
 ```swift
 UserDefaults.standard.set("http://192.168.1.100:8000", forKey: "serverBaseURL")
-UserDefaults.standard.set("a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6", forKey: "serverAPIKey")
+UserDefaults.standard.set("AMlyrics_API_SUPER", forKey: "serverAPIKey")
 ```
 
 ---
