@@ -1,5 +1,6 @@
 import SwiftUI
 import MusicKit
+import SwiftData
 
 // MARK: - Main Lyrics View
 struct LyricsView: View {
@@ -7,8 +8,12 @@ struct LyricsView: View {
     @State private var dominantColors: [NSColor] = []
     @State private var currentLineIndex: Int = 0
     @State private var currentTime: Double = 0.0
+    @State private var currentWordProgress: Double = 0.0
     @State private var isLoading: Bool = false
     @State private var errorMessage: String?
+    
+    @State private var lyricProvider: LyricProvider?
+    @State private var syncClock = SyncClock()
     
     let track: MusicItemCollection<Track>
     
@@ -36,8 +41,10 @@ struct LyricsView: View {
             }
         }
         .onAppear {
+            setupLyricProvider()
             loadArtworkColors()
             loadLyrics()
+            setupSyncClock()
         }
     }
     
@@ -51,87 +58,94 @@ struct LyricsView: View {
                 [0.0, 0.5], [0.5, 0.5], [1.0, 0.5],
                 [0.0, 1.0], [0.5, 1.0], [1.0, 1.0]
             ],
-            colors: dominantColors.isEmpty ? 
-                [Color.blue.opacity(0.3), Color.purple.opacity(0.3), Color.pink.opacity(0.3)] :
-                Array(dominantColors.prefix(3).map { Color(nsColor: $0).opacity(0.4) } + 
-                      Array(repeating: Color.black.opacity(0.2), count: max(0, 6 - dominantColors.count)))
+            colors: [
+                Color(nsColor: dominantColors.isEmpty ? NSColor(red: 0.2, green: 0.2, blue: 0.3, alpha: 1.0) : dominantColors[0]),
+                Color(nsColor: dominantColors.isEmpty ? NSColor(red: 0.3, green: 0.25, blue: 0.4, alpha: 1.0) : dominantColors[1]),
+                Color(nsColor: dominantColors.isEmpty ? NSColor(red: 0.15, green: 0.15, blue: 0.25, alpha: 1.0) : dominantColors[2]),
+                Color(nsColor: dominantColors.isEmpty ? NSColor(red: 0.3, green: 0.25, blue: 0.4, alpha: 1.0) : dominantColors[1]),
+                Color(nsColor: dominantColors.isEmpty ? NSColor(red: 0.2, green: 0.2, blue: 0.3, alpha: 1.0) : dominantColors[0]),
+                Color(nsColor: dominantColors.isEmpty ? NSColor(red: 0.15, green: 0.15, blue: 0.25, alpha: 1.0) : dominantColors[2]),
+                Color(nsColor: dominantColors.isEmpty ? NSColor(red: 0.15, green: 0.15, blue: 0.25, alpha: 1.0) : dominantColors[2]),
+                Color(nsColor: dominantColors.isEmpty ? NSColor(red: 0.2, green: 0.2, blue: 0.3, alpha: 1.0) : dominantColors[0]),
+                Color(nsColor: dominantColors.isEmpty ? NSColor(red: 0.3, green: 0.25, blue: 0.4, alpha: 1.0) : dominantColors[1])
+            ]
         )
         .animation(.easeInOut(duration: 1.5), value: dominantColors)
     }
     
-    // MARK: - Lyrics Scroll View
-    private func lyricsScrollView(_ lyrics: TrackLyrics) -> some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(spacing: 16) {
-                    ForEach(Array(lyrics.lyrics.enumerated()), id: \.offset) { index, line in
-                        let isActive = index == currentLineIndex
-                        
-                        if line.words != nil && !line.words!.isEmpty {
-                            KaraokeLineView(
-                                line: line,
-                                currentTime: currentTime,
-                                isActive: isActive
-                            )
-                            .id("line-\(index)")
-                        } else {
-                            LyricsLineView(
-                                line: line,
-                                isActive: isActive,
-                                currentTime: currentTime
-                            )
-                            .id("line-\(index)")
-                        }
-                    }
-                }
-                .padding(.vertical, 40)
-            }
-            .onChange(of: currentLineIndex) { _, newIndex in
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                    proxy.scrollTo("line-\(newIndex)", anchor: .center)
-                }
-            }
-        }
-    }
-    
     // MARK: - Loading View
     private var loadingView: some View {
-        VStack(spacing: 16) {
+        VStack {
             ProgressView()
                 .scaleEffect(1.5)
             Text("Loading lyrics...")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+                .padding(.top, 10)
         }
     }
     
     // MARK: - Error View
     private func errorView(_ message: String) -> some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 20) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.largeTitle)
                 .foregroundStyle(.orange)
+            
+            Text("Error")
+                .font(.headline)
+            
             Text(message)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
+                .padding(.horizontal)
+            
+            Button("Retry") {
+                loadLyrics()
+            }
+            .buttonStyle(.borderedProminent)
         }
     }
     
     // MARK: - Empty View
     private var emptyView: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 20) {
             Image(systemName: "music.note")
                 .font(.largeTitle)
                 .foregroundStyle(.secondary)
+            
             Text("No lyrics available")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
     }
     
+    // MARK: - Lyrics Scroll View
+    private func lyricsScrollView(_ lyrics: TrackLyrics) -> some View {
+        ScrollView {
+            VStack(spacing: 20) {
+                ForEach(lyrics.lyrics) { line in
+                    LyricsLineView(
+                        line: line,
+                        isActive: line.lineIndex == currentLineIndex,
+                        currentTime: currentLineIndex == line.lineIndex ? currentTime : 0.0
+                    )
+                }
+            }
+            .padding(.vertical, 40)
+        }
+        .scrollPosition(id: .constant(currentLineIndex))
+    }
+    
     // MARK: - Helper Methods
+    private func setupLyricProvider() {
+        guard let modelContext = try? ModelContainer(for: CachedLyrics.self).mainContext else {
+            return
+        }
+        lyricProvider = LyricProvider(modelContext: modelContext)
+    }
+    
     private func loadArtworkColors() {
         Task { @MainActor in
             guard let firstTrack = track.first,
@@ -152,15 +166,37 @@ struct LyricsView: View {
     }
     
     private func loadLyrics() {
-        // This will be connected to LyricProvider in the full implementation
-        // For now, use mock data
-        Task { @MainActor in
-            isLoading = true
-            try? await Task.sleep(nanoseconds: 1_000_000_000) // Simulate loading
-            
-            trackLyrics = TrackLyrics.mock
-            isLoading = false
+        guard let firstTrack = track.first else {
+            errorMessage = "No track available"
+            return
         }
+        
+        Task { @MainActor in
+            guard let provider = lyricProvider else {
+                errorMessage = "Lyric provider not initialized"
+                return
+            }
+            
+            await provider.fetchLyrics(
+                trackId: firstTrack.id.rawValue,
+                title: firstTrack.title,
+                artist: "", // MusicKit Track doesn't have direct artist property on macOS
+                isFavorite: false // MusicKit Track doesn't have isFavorite on macOS
+            )
+            
+            trackLyrics = provider.trackLyrics
+            isLoading = provider.isLoading
+            errorMessage = provider.errorMessage
+            
+            // Update sync clock with lyrics
+            if let lyrics = trackLyrics {
+                syncClock.updateLyrics(lyrics.lyrics)
+            }
+        }
+    }
+    
+    private func setupSyncClock() {
+        syncClock.updateLyrics(trackLyrics?.lyrics ?? [])
     }
 }
 

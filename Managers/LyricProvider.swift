@@ -77,7 +77,7 @@ final class LyricProvider {
         
         // Priority 4: Fallback to Spotify-Lyric-API
         do {
-            let spotifyLyrics = try await fetchSpotifyLyrics(trackId: trackId)
+            let spotifyLyrics = try await fetchSpotifyLyrics(trackId: trackId, title: title, artist: artist)
             trackLyrics = spotifyLyrics
             
             // Save to local cache (without word-level timestamps)
@@ -129,13 +129,13 @@ final class LyricProvider {
     }
     
     // MARK: - Spotify-Lyric-API Fallback
-    private func fetchSpotifyLyrics(trackId: String) async throws -> TrackLyrics {
-        // Note: This requires a Spotify track ID, not Apple Music track ID
-        // In a real implementation, you'd need to map Apple Music IDs to Spotify IDs
-        // For now, this is a placeholder that demonstrates the structure
+    private func fetchSpotifyLyrics(trackId: String, title: String, artist: String) async throws -> TrackLyrics {
+        // Use Spotify-Lyric-API with search query format
+        // Format: https://spotify-lyric-api-984e7b4face0.herokuapp.com/?trackid=spotify:track:TRACK_ID
+        // Or use search: https://spotify-lyric-api-984e7b4face0.herokuapp.com/?q=TRACK_NAME+ARTIST_NAME
         
-        let spotifyTrackId = mapToSpotifyId(trackId) // Placeholder function
-        let urlString = "https://spotify-lyric-api-984e7b4face0.herokuapp.com/?trackid=\(spotifyTrackId)"
+        let query = "\(title) \(artist)".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        let urlString = "https://spotify-lyric-api-984e7b4face0.herokuapp.com/?q=\(query)"
         
         guard let url = URL(string: urlString) else {
             throw LyricProviderError.invalidURL
@@ -161,8 +161,8 @@ final class LyricProvider {
         
         return TrackLyrics(
             trackId: trackId,
-            title: "Unknown", // Spotify API doesn't always return title
-            artist: "Unknown", // Spotify API doesn't always return artist
+            title: spotifyResponse.lines.first?.words ?? title,
+            artist: artist,
             silenceOffset: 0.0,
             lyrics: lyricsWithEndTimes,
             cachedAt: nil
@@ -195,13 +195,6 @@ final class LyricProvider {
         }
         
         return result
-    }
-    
-    // MARK: - Helper: Map to Spotify ID (Placeholder)
-    private func mapToSpotifyId(_ appleMusicId: String) -> String {
-        // In a real implementation, you would use an API like Apple Music to Spotify mapping
-        // For now, return a placeholder
-        return appleMusicId
     }
 }
 

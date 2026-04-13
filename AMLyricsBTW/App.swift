@@ -1,6 +1,7 @@
 import SwiftUI
 import MusicKit
 import SwiftData
+import Combine
 
 @main
 struct AMLyricsBTWApp: App {
@@ -24,8 +25,28 @@ struct AMLyricsBTWApp: App {
 }
 
 struct ContentView: View {
+    @State private var showLyrics = false
+    
     var body: some View {
-        Text("AMLyricsBTW")
-            .font(.largeTitle)
+        VStack {
+            if showLyrics {
+                // Use mock track for now to demonstrate lyrics display
+                LyricsView(track: MusicItemCollection([]))
+            } else {
+                VStack(spacing: 20) {
+                    Image(systemName: "music.note")
+                        .font(.largeTitle)
+                        .foregroundStyle(.secondary)
+                    
+                    Text("AMLyricsBTW")
+                        .font(.largeTitle)
+                    
+                    Button("Show Demo Lyrics") {
+                        showLyrics = true
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+            }
+        }
     }
 }
