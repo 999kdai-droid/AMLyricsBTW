@@ -34,11 +34,19 @@ cd "$DEV_DIR"
 if [ -d "$PROJECT_NAME" ]; then
     echo "Project directory already exists. Updating..."
     cd "$PROJECT_NAME"
-    git pull
+    # Check if we're on a branch, if not checkout main
+    if git rev-parse --abbrev-ref HEAD >/dev/null 2>&1; then
+        git pull
+    else
+        git checkout main 2>/dev/null || git checkout -b main origin/main
+        git pull
+    fi
 else
     echo "Cloning repository..."
     git clone "$REPO_URL"
     cd "$PROJECT_NAME"
+    # Ensure we're on main branch
+    git checkout main 2>/dev/null || git checkout -b main origin/main
 fi
 
 echo ""
