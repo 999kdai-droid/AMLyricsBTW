@@ -9,11 +9,15 @@ struct LyricsView: View {
     @State private var currentLineIndex: Int = 0
     @State private var currentTime: Double = 0.0
     @State private var currentWordProgress: Double = 0.0
-    @State private var isLoading: Bool = false
     @State private var errorMessage: String?
     
     @State private var lyricProvider: LyricProvider?
     @State private var syncClock = SyncClock()
+    
+    // Use computed property to get isLoading from provider
+    private var isLoading: Bool {
+        lyricProvider?.isLoading ?? false
+    }
     
     let track: MusicItemCollection<Track>
     let songName: String
@@ -97,16 +101,27 @@ struct LyricsView: View {
             Text("Error")
                 .font(.headline)
             
-            Text(message)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
+            ScrollView {
+                Text(message)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+            }
+            .frame(maxHeight: 200)
             
             Button("Retry") {
+                errorMessage = nil
                 loadLyrics()
             }
             .buttonStyle(.borderedProminent)
+            
+            Button("Back to Search") {
+                errorMessage = nil
+                trackLyrics = nil
+            }
+            .buttonStyle(.borderless)
+            .padding(.top, 10)
         }
     }
     
@@ -171,9 +186,12 @@ struct LyricsView: View {
         Task { @MainActor in
             guard let provider = lyricProvider else {
                 errorMessage = "Lyric provider not initialized"
-                isLoading = false
                 return
             }
+            
+            // Clear previous state
+            errorMessage = nil
+            trackLyrics = nil
             
             // Use provided song name and artist name
             let title = songName.isEmpty ? "Unknown" : songName
@@ -186,8 +204,8 @@ struct LyricsView: View {
                 isFavorite: false
             )
             
+            // Get results from provider
             trackLyrics = provider.trackLyrics
-            isLoading = provider.isLoading
             errorMessage = provider.errorMessage
             
             // Update sync clock with lyrics

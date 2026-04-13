@@ -85,8 +85,23 @@ final class LyricProvider {
             
             isLoading = false
             return
+        } catch let error as LyricProviderError {
+            switch error {
+            case .invalidURL:
+                errorMessage = "Server not configured. Please check Server Settings."
+            case .networkError(let underlying):
+                if (underlying as NSError).code == -1004 {
+                    errorMessage = "Cannot connect to server. Please check:\n1. iMac server is running\n2. IP address is correct\n3. Both devices are on same network"
+                } else {
+                    errorMessage = "Network error: \(underlying.localizedDescription)"
+                }
+            case .noResult:
+                errorMessage = "No lyrics found for this track"
+            default:
+                errorMessage = "Failed to fetch lyrics: \(error.localizedDescription)"
+            }
         } catch {
-            errorMessage = "Failed to fetch lyrics from all sources"
+            errorMessage = "Failed to fetch lyrics from all sources: \(error.localizedDescription)"
         }
         
         isLoading = false
@@ -135,11 +150,16 @@ final class LyricProvider {
         
         guard let serverURL = UserDefaults.standard.string(forKey: "serverBaseURL"),
               let apiKey = UserDefaults.standard.string(forKey: "serverAPIKey") else {
+            print("DEBUG: Missing server URL or API key")
             throw LyricProviderError.invalidURL
         }
         
+        print("DEBUG: Server URL = \(serverURL)")
+        print("DEBUG: API Key set = \(!apiKey.isEmpty)")
+        
         let urlString = "\(serverURL)/spotify-lyrics"
         guard let url = URL(string: urlString) else {
+            print("DEBUG: Invalid URL: \(urlString)")
             throw LyricProviderError.invalidURL
         }
         
@@ -147,6 +167,7 @@ final class LyricProvider {
         request.httpMethod = "POST"
         request.setValue(apiKey, forHTTPHeaderField: "X-API-Key")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 30.0 // 30 second timeout
         
         let body: [String: String] = [
             "title": title,
@@ -154,43 +175,71 @@ final class LyricProvider {
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         
-        let (data, response) = try await URLSession.shared.data(for: request)
+        print("DEBUG: Sending request to \(urlString)")
         
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200 else {
-            throw LyricProviderError.noResult
-        }
-        
-        let serverResponse = try JSONDecoder().decode(SpotifyLyricsServerResponse.self, from: data)
-        
-        // Check if lyrics are available
-        guard !serverResponse.lines.isEmpty else {
-            throw LyricProviderError.noResult
-        }
-        
-        // Convert to TrackLyrics format (without word-level timestamps)
-        let lyrics = serverResponse.lines.enumerated().map { index, line in
-            LyricsLine(
-                lineIndex: index,
-                start: Double(line.startTimeMs) / 1000.0,
-                end: 0.0, // Spotify API doesn't provide end times
-                text: line.words,
-                translation: "", // No translation from Spotify API
-                words: nil // No word-level timestamps
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            print("DEBUG: Got response")
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                print("DEBUG: Invalid response type")
+                throw LyricProviderError.unknownError
+            }
+            
+            print("DEBUG: Status code = \(httpResponse.statusCode)")
+            
+            if httpResponse.statusCode == 401 {
+                print("DEBUG: Unauthorized - check API key")
+                throw LyricProviderError.networkError(NSError(domain: "", code: 401, userInfo: [NSLocalizedDescriptionKey: "Invalid API key"]))
+            }
+            
+            if httpResponse.statusCode == 404 {
+                print("DEBUG: Lyrics not found on server")
+                throw LyricProviderError.noResult
+            }
+            
+            guard httpResponse.statusCode == 200 else {
+                print("DEBUG: Unexpected status code: \(httpResponse.statusCode)")
+                throw LyricProviderError.networkError(NSError(domain: "", code: httpResponse.statusCode, userInfo: nil))
+            }
+            
+            let serverResponse = try JSONDecoder().decode(SpotifyLyricsServerResponse.self, from: data)
+            
+            print("DEBUG: Decoded response, lines count: \(serverResponse.lines.count)")
+            
+            // Check if lyrics are available
+            guard !serverResponse.lines.isEmpty else {
+                throw LyricProviderError.noResult
+            }
+            
+            // Convert to TrackLyrics format (without word-level timestamps)
+            let lyrics = serverResponse.lines.enumerated().map { index, line in
+                LyricsLine(
+                    lineIndex: index,
+                    start: Double(line.startTimeMs) / 1000.0,
+                    end: 0.0, // Spotify API doesn't provide end times
+                    text: line.words,
+                    translation: "", // No translation from Spotify API
+                    words: nil // No word-level timestamps
+                )
+            }
+            
+            // Estimate end times
+            let lyricsWithEndTimes = estimateEndTimes(for: lyrics)
+            
+            return TrackLyrics(
+                trackId: trackId,
+                title: serverResponse.title,
+                artist: serverResponse.artist,
+                silenceOffset: 0.0,
+                lyrics: lyricsWithEndTimes,
+                cachedAt: nil
             )
+        } catch {
+            print("DEBUG: Error in fetchSpotifyLyrics: \(error)")
+            throw error
         }
-        
-        // Estimate end times
-        let lyricsWithEndTimes = estimateEndTimes(for: lyrics)
-        
-        return TrackLyrics(
-            trackId: trackId,
-            title: serverResponse.title,
-            artist: serverResponse.artist,
-            silenceOffset: 0.0,
-            lyrics: lyricsWithEndTimes,
-            cachedAt: nil
-        )
     }
     
     // MARK: - Helper: Estimate End Times
