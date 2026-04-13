@@ -1,19 +1,11 @@
-//
-//  AMLyricsBTWApp.swift
-//  AMLyricsBTW
-//
-//  Created by Kdai on 2026/04/13.
-//
-
 import SwiftUI
+import MusicKit
 import SwiftData
 
 @main
 struct AMLyricsBTWApp: App {
     var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
+        let schema = Schema([CachedLyrics.self])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
         do {
@@ -28,5 +20,12 @@ struct AMLyricsBTWApp: App {
             ContentView()
         }
         .modelContainer(sharedModelContainer)
+    }
+}
+
+struct ContentView: View {
+    var body: some View {
+        Text("AMLyricsBTW")
+            .font(.largeTitle)
     }
 }
