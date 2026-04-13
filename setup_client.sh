@@ -24,6 +24,22 @@ fi
 echo "Xcode found: $(xcodebuild -version | head -n 1)"
 echo ""
 
+# Install xcodegen if not present
+echo "Checking xcodegen installation..."
+if ! command -v xcodegen &> /dev/null; then
+    echo "xcodegen not found. Installing via Homebrew..."
+    if command -v brew &> /dev/null; then
+        brew install xcodegen
+    else
+        echo "Error: Homebrew not found. Please install Homebrew first:"
+        echo "  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
+        exit 1
+    fi
+else
+    echo "xcodegen found: $(xcodegen version)"
+fi
+echo ""
+
 # Use the script directory as the project directory
 echo "Using local files at: $SCRIPT_DIR"
 cd "$SCRIPT_DIR"
@@ -32,15 +48,14 @@ echo ""
 echo "=== Working with local files at: $(pwd) ==="
 echo ""
 
-# Check if xcodegen is installed (optional tool for generating Xcode projects)
-if command -v xcodegen &> /dev/null; then
-    echo "xcodegen found. Using it to generate Xcode project..."
-    
-    # Create project.yml for xcodegen
-    cat > project.yml << EOF
+# Generate Xcode project using xcodegen
+echo "Generating Xcode project using xcodegen..."
+
+# Create project.yml for xcodegen
+cat > project.yml << EOF
 name: $PROJECT_NAME
 options:
-  bundleIdPrefix: $BUNDLE_ID
+  bundleIdPrefix: com.example
   deploymentTarget:
     macOS: "15.0"
   developmentLanguage: ja
@@ -50,7 +65,7 @@ targets:
     platform: macOS
     deploymentTarget: "15.0"
     sources:
-      - path: .
+      - path: client
         includes: ["**/*.swift"]
     settings:
       PRODUCT_BUNDLE_IDENTIFIER: $BUNDLE_ID
@@ -61,50 +76,9 @@ targets:
       - musicKit
 EOF
 
-    # Generate Xcode project
-    xcodegen generate
-    echo "Xcode project generated using xcodegen."
-    
-else
-    echo "xcodegen not found. Using manual project creation approach..."
-    echo ""
-    echo "=== Manual Xcode Project Creation Required ==="
-    echo ""
-    echo "Since Xcode project creation requires GUI, please follow these steps:"
-    echo ""
-    echo "1. Open Xcode"
-    echo "2. File → New → Project"
-    echo "3. Select: macOS → App"
-    echo "4. Configure:"
-    echo "   - Product Name: $PROJECT_NAME"
-    echo "   - Team: Your Apple Developer Team"
-    echo "   - Organization Identifier: com.example"
-    echo "   - Bundle Identifier: $BUNDLE_ID"
-    echo "   - Interface: SwiftUI"
-    echo "   - Language: Swift"
-    echo "   - Storage: SwiftData"
-    echo "   - Save location: $DEV_DIR/$PROJECT_NAME"
-    echo ""
-    echo "5. After creating the project, add the following files:"
-    echo ""
-    
-    # List files to add
-    echo "Files to add to Xcode project:"
-    echo "  - client/Models/LyricsModels.swift"
-    echo "  - client/Views/LyricsView.swift"
-    echo "  - client/Views/KaraokeLineView.swift"
-    echo "  - client/Views/LyricsLineView.swift"
-    echo "  - client/Views/OffsetAdjustView.swift"
-    echo "  - client/Managers/LyricProvider.swift"
-    echo "  - client/Managers/SyncClock.swift"
-    echo "  - client/Managers/ServerClient.swift"
-    echo "  - client/SwiftData/CachedLyrics.swift"
-    echo "  - client/Utilities/ColorExtractor.swift"
-    echo ""
-    
-    # Ask user to continue
-    read -p "Press Enter after you have created the Xcode project..."
-fi
+# Generate Xcode project
+xcodegen generate
+echo "Xcode project generated successfully."
 
 # Copy client files to a convenient location
 echo ""
