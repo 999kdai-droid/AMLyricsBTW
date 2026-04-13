@@ -25,107 +25,97 @@ struct AMLyricsBTWApp: App {
 }
 
 struct ContentView: View {
-    @State private var songName = ""
-    @State private var artistName = ""
-    @State private var showLyrics = false
-    @State private var serverURL = ""
-    @State private var apiKey = ""
-    @State private var showSettings = false
+    @State private var currentSongName: String = ""
+    @State private var currentArtistName: String = ""
+    @State private var isPlaying: Bool = false
+    @State private var timer: Timer? = nil
     
     var body: some View {
-        VStack {
-            if showLyrics {
-                LyricsView(track: MusicItemCollection([]), songName: songName, artistName: artistName)
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("Back") {
-                                showLyrics = false
-                            }
-                        }
-                    }
-            } else if showSettings {
-                ServerSettingsView(serverURL: $serverURL, apiKey: $apiKey, isPresented: $showSettings)
-            } else {
+        Group {
+            if currentSongName.isEmpty {
+                // No music playing
                 VStack(spacing: 20) {
                     Image(systemName: "music.note")
                         .font(.largeTitle)
                         .foregroundStyle(.secondary)
                     
-                    Text("AMLyricsBTW")
-                        .font(.largeTitle)
+                    Text("No music playing")
+                        .font(.headline)
                     
-                    TextField("Song Name", text: $songName)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(maxWidth: 300)
-                    
-                    TextField("Artist Name", text: $artistName)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(maxWidth: 300)
-                    
-                    Button("Search Lyrics") {
-                        showLyrics = true
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(songName.isEmpty || artistName.isEmpty)
-                    
-                    Button("Server Settings") {
-                        showSettings = true
-                    }
-                    .buttonStyle(.borderless)
-                    .padding(.top, 10)
+                    Text("Play a song in Apple Music to see lyrics")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                 }
                 .padding()
+            } else {
+                // Show lyrics for current track
+                LyricsView(
+                    track: MusicItemCollection([]),
+                    songName: currentSongName,
+                    artistName: currentArtistName
+                )
             }
         }
         .onAppear {
-            // Load saved settings
-            serverURL = UserDefaults.standard.string(forKey: "serverBaseURL") ?? "http://192.168.x.x:8000"
-            apiKey = UserDefaults.standard.string(forKey: "serverAPIKey") ?? ""
+            startMonitoringMusic()
+        }
+        .onDisappear {
+            stopMonitoringMusic()
+        }
+    }
+    
+    @MainActor
+    private func startMonitoringMusic() {
+        // Check immediately
+        Task { @MainActor in
+            await checkNowPlaying()
+        }
+        
+        // Check every 3 seconds
+        timer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { _ in
+            Task { @MainActor in
+                await checkNowPlaying()
+            }
+        }
+    }
+    
+    @MainActor
+    private func stopMonitoringMusic() {
+        timer?.invalidate()
+        timer = nil
+    }
+    
+    @MainActor
+    private func checkNowPlaying() async {
+        // Request authorization if needed
+        let status = MusicAuthorization.currentStatus
+        if status == .notDetermined {
+            _ = await MusicAuthorization.request()
+        }
+        
+        // Use ApplicationMusicPlayer for macOS
+        let player = ApplicationMusicPlayer.shared
+        let queue = player.queue
+        
+        if let entry = queue.currentEntry, let item = entry.item {
+            // Use description which typically contains "Title - Artist"
+            let description = item.description
+            // Try to parse "Title - Artist" format
+            let components = description.components(separatedBy: " - ")
+            if components.count >= 2 {
+                currentSongName = components[0].trimmingCharacters(in: .whitespaces)
+                currentArtistName = components[1].trimmingCharacters(in: .whitespaces)
+            } else {
+                currentSongName = description
+                currentArtistName = "Unknown Artist"
+            }
+            isPlaying = player.state.playbackStatus == .playing
+        } else {
+            // Nothing playing
+            currentSongName = ""
+            currentArtistName = ""
+            isPlaying = false
         }
     }
 }
 
-struct ServerSettingsView: View {
-    @Binding var serverURL: String
-    @Binding var apiKey: String
-    @Binding var isPresented: Bool
-    
-    var body: some View {
-        VStack(spacing: 20) {
-            Text("Server Settings")
-                .font(.title)
-            
-            Text("Enter your iMac's local IP address")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            
-            TextField("Server URL (e.g., http://192.168.1.100:8000)", text: $serverURL)
-                .textFieldStyle(.roundedBorder)
-                .frame(maxWidth: 400)
-            
-            SecureField("API Key", text: $apiKey)
-                .textFieldStyle(.roundedBorder)
-                .frame(maxWidth: 400)
-            
-            HStack(spacing: 20) {
-                Button("Cancel") {
-                    isPresented = false
-                }
-                
-                Button("Save") {
-                    UserDefaults.standard.set(serverURL, forKey: "serverBaseURL")
-                    UserDefaults.standard.set(apiKey, forKey: "serverAPIKey")
-                    isPresented = false
-                }
-                .buttonStyle(.borderedProminent)
-            }
-            
-            Text("Find iMac IP: System Settings → Network → Wi-Fi → Details")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .padding(.top, 20)
-        }
-        .padding()
-        .frame(minWidth: 500, minHeight: 300)
-    }
-}
