@@ -57,6 +57,18 @@ struct SpotifyLyricsResponse: Codable, Sendable {
     }
 }
 
+// MARK: - Spotify Lyrics Server Response
+struct SpotifyLyricsServerResponse: Codable, Sendable {
+    let lines: [SpotifyLyricsServerLine]
+    let title: String
+    let artist: String
+    
+    struct SpotifyLyricsServerLine: Codable, Sendable {
+        let startTimeMs: Int
+        let words: String
+    }
+}
+
 // MARK: - Job Response
 struct JobResponse: Codable, Sendable {
     let jobId: String

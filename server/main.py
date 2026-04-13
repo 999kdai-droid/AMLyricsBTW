@@ -11,6 +11,7 @@ import uvicorn
 from .config import config
 from .queue_manager import queue_manager
 from .cache import cache_manager
+from .spotify_lyrics import spotify_lyrics_client
 
 app = FastAPI(title="AMLyricsBTW API")
 
@@ -46,6 +47,19 @@ class QueueStatusResponse(BaseModel):
     queued: int
     processing: list
     total_jobs: int
+
+class SpotifyLyricsRequest(BaseModel):
+    title: str
+    artist: str
+
+class SpotifyLyricsLine(BaseModel):
+    startTimeMs: int
+    words: str
+
+class SpotifyLyricsResponse(BaseModel):
+    lines: list
+    title: str
+    artist: str
 
 # API Key Authentication Middleware
 async def verify_api_key(x_api_key: Optional[str] = Header(None)):
@@ -126,6 +140,26 @@ async def get_queue_status():
     """
     status = await queue_manager.get_queue_status()
     return QueueStatusResponse(**status)
+
+@app.post("/spotify-lyrics", response_model=SpotifyLyricsResponse)
+async def get_spotify_lyrics(request: SpotifyLyricsRequest):
+    """
+    Fetch lyrics from Spotify for a given track.
+    """
+    async with spotify_lyrics_client as client:
+        result = await client.search_and_get_lyrics(
+            title=request.title,
+            artist=request.artist
+        )
+        
+        if result is None or not result.lines:
+            raise HTTPException(status_code=404, detail="Lyrics not found")
+        
+        return SpotifyLyricsResponse(
+            lines=[{"startTimeMs": line.startTimeMs, "words": line.words} for line in result.lines],
+            title=request.title,
+            artist=request.artist
+        )
 
 @app.on_event("startup")
 async def startup_event():
