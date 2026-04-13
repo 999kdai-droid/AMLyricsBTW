@@ -14,7 +14,7 @@ iMac 2015で以下の手順を実行してください。
 
 ```bash
 cd ~/Desktop  # または任意の場所
-git clone <リポジトリURL>
+git clone https://github.com/999kdai-droid/AMLyricsBTW.git
 cd iMusic/server
 ```
 
@@ -78,7 +78,7 @@ iMacのネットワーク設定で固定IPを設定してください（例: `19
 
 ```bash
 cd ~/Developer
-git clone <リポジトリURL>
+git clone https://github.com/999kdai-droid/AMLyricsBTW.git
 cd iMusic
 ```
 
@@ -197,9 +197,9 @@ git init
 git add .
 git commit -m "Initial commit: AMLyricsBTW implementation"
 
-# GitHubリモート追加（YOUR_USERNAMEを置き換え）
+# GitHubリモート追加
 git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/AMLyricsBTW.git
+git remote add origin https://github.com/999kdai-droid/AMLyricsBTW.git
 git push -u origin main
 ```
 
