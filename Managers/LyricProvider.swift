@@ -143,78 +143,54 @@ final class LyricProvider {
         throw LyricProviderError.timeout
     }
     
-    // MARK: - Spotify-Lyric-API via Server
+    // MARK: - Spotify-Lyric-API Direct Call
     private func fetchSpotifyLyrics(trackId: String, title: String, artist: String) async throws -> TrackLyrics {
-        // Call our server endpoint instead of directly calling Spotify API
-        // This requires the server to be running
+        // Note: The spotify-lyrics-api only supports track ID lookup, not search.
+        // For now, we'll try a direct call to see if any search method works.
         
-        guard let serverURL = UserDefaults.standard.string(forKey: "serverBaseURL"),
-              let apiKey = UserDefaults.standard.string(forKey: "serverAPIKey") else {
-            print("DEBUG: Missing server URL or API key")
-            throw LyricProviderError.invalidURL
-        }
+        let query = "\(title) \(artist)".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        let urlString = "https://spotify-lyrics-api.akashrchandran.vercel.app/?q=\(query)"
         
-        print("DEBUG: Server URL = \(serverURL)")
-        print("DEBUG: API Key set = \(!apiKey.isEmpty)")
+        print("DEBUG: Trying URL: \(urlString)")
         
-        let urlString = "\(serverURL)/spotify-lyrics"
         guard let url = URL(string: urlString) else {
-            print("DEBUG: Invalid URL: \(urlString)")
             throw LyricProviderError.invalidURL
         }
         
         var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue(apiKey, forHTTPHeaderField: "X-API-Key")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 30.0 // 30 second timeout
-        
-        let body: [String: String] = [
-            "title": title,
-            "artist": artist
-        ]
-        request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        
-        print("DEBUG: Sending request to \(urlString)")
+        request.timeoutInterval = 30.0
         
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             
-            print("DEBUG: Got response")
-            
             guard let httpResponse = response as? HTTPURLResponse else {
-                print("DEBUG: Invalid response type")
                 throw LyricProviderError.unknownError
             }
             
-            print("DEBUG: Status code = \(httpResponse.statusCode)")
-            
-            if httpResponse.statusCode == 401 {
-                print("DEBUG: Unauthorized - check API key")
-                throw LyricProviderError.networkError(NSError(domain: "", code: 401, userInfo: [NSLocalizedDescriptionKey: "Invalid API key"]))
-            }
+            print("DEBUG: Status code: \(httpResponse.statusCode)")
             
             if httpResponse.statusCode == 404 {
-                print("DEBUG: Lyrics not found on server")
                 throw LyricProviderError.noResult
             }
             
             guard httpResponse.statusCode == 200 else {
-                print("DEBUG: Unexpected status code: \(httpResponse.statusCode)")
                 throw LyricProviderError.networkError(NSError(domain: "", code: httpResponse.statusCode, userInfo: nil))
             }
             
-            let serverResponse = try JSONDecoder().decode(SpotifyLyricsServerResponse.self, from: data)
+            // Print raw response for debugging
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print("DEBUG: Response: \(jsonString.prefix(500))...")
+            }
             
-            print("DEBUG: Decoded response, lines count: \(serverResponse.lines.count)")
+            let spotifyResponse = try JSONDecoder().decode(SpotifyLyricsResponse.self, from: data)
             
             // Check if lyrics are available
-            guard !serverResponse.lines.isEmpty else {
+            guard !spotifyResponse.lines.isEmpty else {
                 throw LyricProviderError.noResult
             }
             
             // Convert to TrackLyrics format (without word-level timestamps)
-            let lyrics = serverResponse.lines.enumerated().map { index, line in
+            let lyrics = spotifyResponse.lines.enumerated().map { index, line in
                 LyricsLine(
                     lineIndex: index,
                     start: Double(line.startTimeMs) / 1000.0,
@@ -230,8 +206,8 @@ final class LyricProvider {
             
             return TrackLyrics(
                 trackId: trackId,
-                title: serverResponse.title,
-                artist: serverResponse.artist,
+                title: spotifyResponse.lines.first?.words ?? title,
+                artist: artist,
                 silenceOffset: 0.0,
                 lyrics: lyricsWithEndTimes,
                 cachedAt: nil
