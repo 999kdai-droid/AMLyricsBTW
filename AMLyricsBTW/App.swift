@@ -25,13 +25,14 @@ struct AMLyricsBTWApp: App {
 }
 
 struct ContentView: View {
+    @State private var songName = ""
+    @State private var artistName = ""
     @State private var showLyrics = false
     
     var body: some View {
         VStack {
             if showLyrics {
-                // Use mock track for now to demonstrate lyrics display
-                LyricsView(track: MusicItemCollection([]))
+                LyricsView(track: MusicItemCollection([]), songName: songName, artistName: artistName)
             } else {
                 VStack(spacing: 20) {
                     Image(systemName: "music.note")
@@ -41,11 +42,21 @@ struct ContentView: View {
                     Text("AMLyricsBTW")
                         .font(.largeTitle)
                     
-                    Button("Show Demo Lyrics") {
+                    TextField("Song Name", text: $songName)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(maxWidth: 300)
+                    
+                    TextField("Artist Name", text: $artistName)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(maxWidth: 300)
+                    
+                    Button("Search Lyrics") {
                         showLyrics = true
                     }
                     .buttonStyle(.borderedProminent)
+                    .disabled(songName.isEmpty || artistName.isEmpty)
                 }
+                .padding()
             }
         }
     }

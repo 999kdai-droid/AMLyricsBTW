@@ -16,6 +16,8 @@ struct LyricsView: View {
     @State private var syncClock = SyncClock()
     
     let track: MusicItemCollection<Track>
+    let songName: String
+    let artistName: String
     
     var body: some View {
         ZStack {
@@ -166,22 +168,21 @@ struct LyricsView: View {
     }
     
     private func loadLyrics() {
-        guard let firstTrack = track.first else {
-            errorMessage = "No track available"
-            return
-        }
-        
         Task { @MainActor in
             guard let provider = lyricProvider else {
                 errorMessage = "Lyric provider not initialized"
                 return
             }
             
+            // Use provided song name and artist name
+            let title = songName.isEmpty ? "Unknown" : songName
+            let artist = artistName.isEmpty ? "Unknown" : artistName
+            
             await provider.fetchLyrics(
-                trackId: firstTrack.id.rawValue,
-                title: firstTrack.title,
-                artist: "", // MusicKit Track doesn't have direct artist property on macOS
-                isFavorite: false // MusicKit Track doesn't have isFavorite on macOS
+                trackId: UUID().uuidString, // Generate a unique ID for this search
+                title: title,
+                artist: artist,
+                isFavorite: false
             )
             
             trackLyrics = provider.trackLyrics
@@ -202,5 +203,5 @@ struct LyricsView: View {
 
 // MARK: - Preview
 #Preview {
-    LyricsView(track: [])
+    LyricsView(track: [], songName: "Demo Song", artistName: "Demo Artist")
 }
