@@ -1,13 +1,12 @@
 #!/bin/bash
 # Client Setup Script for AMLyricsBTW
-# This script automates the client-side setup process
+# This script automates the client-side setup process using local files
 
 set -e
 
 PROJECT_NAME="AMLyricsBTW"
 BUNDLE_ID="com.example.amlyricsbtw"
-REPO_URL="https://github.com/999kdai-droid/AMLyricsBTW.git"
-DEV_DIR="$HOME/Developer"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 echo "=== AMLyricsBTW Client Setup ==="
 echo ""
@@ -25,32 +24,12 @@ fi
 echo "Xcode found: $(xcodebuild -version | head -n 1)"
 echo ""
 
-# Create Developer directory if it doesn't exist
-echo "Creating Developer directory..."
-mkdir -p "$DEV_DIR"
-cd "$DEV_DIR"
-
-# Clone repository if not already present
-if [ -d "$PROJECT_NAME" ]; then
-    echo "Project directory already exists. Updating..."
-    cd "$PROJECT_NAME"
-    # Check if we're on a branch, if not checkout main
-    if git rev-parse --abbrev-ref HEAD >/dev/null 2>&1; then
-        git pull
-    else
-        git checkout main 2>/dev/null || git checkout -b main origin/main
-        git pull
-    fi
-else
-    echo "Cloning repository..."
-    git clone "$REPO_URL"
-    cd "$PROJECT_NAME"
-    # Ensure we're on main branch
-    git checkout main 2>/dev/null || git checkout -b main origin/main
-fi
+# Use the script directory as the project directory
+echo "Using local files at: $SCRIPT_DIR"
+cd "$SCRIPT_DIR"
 
 echo ""
-echo "=== Repository cloned/updated at: $(pwd) ==="
+echo "=== Working with local files at: $(pwd) ==="
 echo ""
 
 # Check if xcodegen is installed (optional tool for generating Xcode projects)
