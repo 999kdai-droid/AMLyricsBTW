@@ -171,6 +171,7 @@ struct LyricsView: View {
         Task { @MainActor in
             guard let provider = lyricProvider else {
                 errorMessage = "Lyric provider not initialized"
+                isLoading = false
                 return
             }
             

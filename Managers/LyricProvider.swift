@@ -130,19 +130,25 @@ final class LyricProvider {
     
     // MARK: - Spotify-Lyric-API Fallback
     private func fetchSpotifyLyrics(trackId: String, title: String, artist: String) async throws -> TrackLyrics {
-        // Use Spotify-Lyric-API with search query format
-        // Format: https://spotify-lyric-api-984e7b4face0.herokuapp.com/?trackid=spotify:track:TRACK_ID
-        // Or use search: https://spotify-lyric-api-984e7b4face0.herokuapp.com/?q=TRACK_NAME+ARTIST_NAME
+        // Use Spotify-Lyric-API from akashrchandran
+        // This API requires a Spotify track ID, so we need to search first
+        // Format: https://spotify-lyrics-api.akashrchandran.vercel.app/?trackid=spotify:track:TRACK_ID
         
+        // First, search for the track to get Spotify ID
         let query = "\(title) \(artist)".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-        let urlString = "https://spotify-lyric-api-984e7b4face0.herokuapp.com/?q=\(query)"
+        let searchUrlString = "https://spotify-lyrics-api.akashrchandran.vercel.app/?q=\(query)"
         
-        guard let url = URL(string: urlString) else {
+        guard let searchUrl = URL(string: searchUrlString) else {
             throw LyricProviderError.invalidURL
         }
         
-        let (data, _) = try await URLSession.shared.data(from: url)
+        let (data, _) = try await URLSession.shared.data(from: searchUrl)
         let spotifyResponse = try JSONDecoder().decode(SpotifyLyricsResponse.self, from: data)
+        
+        // Check if lyrics are available
+        if spotifyResponse.lines.isEmpty {
+            throw LyricProviderError.noResult
+        }
         
         // Convert to TrackLyrics format (without word-level timestamps)
         let lyrics = spotifyResponse.lines.enumerated().map { index, line in
