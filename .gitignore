@@ -1,0 +1,24 @@
+# Python
+server/venv/
+server/__pycache__/
+server/*.pyc
+server/.env
+server/cache/
+
+# macOS
+.DS_Store
+*.dmg
+
+# Xcode
+xcode_project/
+*.xcodeproj/
+*.xcworkspace/
+DerivedData/
+
+# Swift
+*.swiftpm/
+.build/
+
+# Temporary files
+*.tmp
+*.log
